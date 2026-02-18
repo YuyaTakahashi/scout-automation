@@ -34,23 +34,18 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: scout-automation/package-lock.json
 
     - name: Install dependencies
-      working-directory: scout-automation
       run: npm ci
 
     - name: Install Playwright Browsers
-      working-directory: scout-automation
       run: npx playwright install --with-deps chromium
 
     - name: Restore Auth Session
-      working-directory: scout-automation
       # Ensure auth.json is created from the secret
       run: echo '${{ secrets.AUTH_JSON }}' > auth.json
 
     - name: Run Scout Script
-      working-directory: scout-automation
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         GAS_WEB_APP_URL: ${{ secrets.GAS_WEB_APP_URL }}
