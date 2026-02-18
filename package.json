@@ -7,6 +7,7 @@
         "build": "tsc",
         "start": "node dist/scout.js",
         "auth": "ts-node src/auth.ts",
+        "auth:sync": "npm run auth && gh secret set AUTH_JSON < auth.json",
         "scout:dry-run": "ts-node src/scout.ts --dry-run",
         "scout": "ts-node src/scout.ts",
         "collect-data": "ts-node src/collect_data.ts"
