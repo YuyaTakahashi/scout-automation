@@ -1,0 +1,23 @@
+node_modules
+dist
+.env
+auth.json
+storageState.json
+*.log
+*.html
+*.csv
+# Playwright/Chrome data
+Default/
+GrShaderCache/
+GraphiteDawnCache/
+ShaderCache/
+extensions_crx_cache/
+component_crx_cache/
+first_party_sets.db*
+segmentation_platform/
+Variations
+Last Version
+Local State
+ChromeFeatureState
+Safe Browsing/
+NativeMessagingHosts/

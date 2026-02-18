@@ -1,0 +1,67 @@
+name: Daily Scout Automation
+
+on:
+  schedule:
+    # Runs at 9:00 AM JST (00:00 UTC) every day
+    - cron: '0 0 * * *'
+  # Allow manual trigger with inputs
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Scout Mode (pickup or unrated)'
+        required: true
+        default: 'pickup'
+        type: choice
+        options:
+          - pickup
+          - unrated
+      dry_run:
+        description: 'Dry Run Mode (does not send actual scouts)'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: scout-automation/package-lock.json
+
+    - name: Install dependencies
+      working-directory: scout-automation
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      working-directory: scout-automation
+      run: npx playwright install --with-deps chromium
+
+    - name: Restore Auth Session
+      working-directory: scout-automation
+      # Ensure auth.json is created from the secret
+      run: echo '${{ secrets.AUTH_JSON }}' > auth.json
+
+    - name: Run Scout Script
+      working-directory: scout-automation
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GAS_WEB_APP_URL: ${{ secrets.GAS_WEB_APP_URL }}
+        # GitHub Action inputs are strings, but we need to handle them carefully
+        # For scheduled runs, we default to pickup and dry-run
+        MODE: ${{ github.event.inputs.mode || 'pickup' }}
+        DRY_RUN: ${{ github.event.inputs.dry_run == 'false' && 'false' || 'true' }}
+      run: |
+        CMD="npm run scout -- --mode=$MODE"
+        if [ "$DRY_RUN" = "true" ]; then
+          CMD="$CMD --dry-run"
+        fi
+        echo "Executing: $CMD"
+        $CMD
