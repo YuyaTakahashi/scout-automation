@@ -485,8 +485,13 @@ async function processCandidate(page: Page, row: Locator, mode: 'pickup' | 'unra
                     await sendBtn.click();
                     await page.waitForTimeout(3000); // Wait for submission
                     console.log('Scout Sent Successfully.');
+                    status = '送信完了';
+
+                    // 新規追加: 【PdM】スカウト シートへの追加記録
+                    await logScoutSent(candidateUrl, classLabel);
                 } else {
                     console.log('Dry Run: Skipping actual send click.');
+                    status = '下書き(DryRun)';
                 }
 
                 // Close candidate detail (handled by finally block or page navigation)
@@ -569,6 +574,36 @@ async function logResult(
 
     const csvLine = `"${url}","${evaluation.evaluation}","${title}","${body.replace(/"/g, '""').replace(/\n/g, '\\n')}","${timestamp}"\n`;
     fs.appendFileSync('scout_results.csv', csvLine);
+}
+
+async function logScoutSent(url: string, position: string) {
+    const gasUrl = process.env.GAS_WEB_APP_URL;
+    if (!gasUrl) return;
+
+    const now = new Date();
+    // 日本時間での月と日の取得
+    const jstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const month = jstDate.getUTCMonth() + 1;
+    const day = jstDate.getUTCDate();
+    const weekNum = Math.ceil(day / 7);
+
+    const dateStr = `${jstDate.getUTCFullYear()}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+    const weekStr = `${month}月${weekNum}週`;
+
+    try {
+        await axios.post(gasUrl, {
+            type: 'scout_sent',
+            url: url,
+            media: 'ビズリーチ',
+            position: position,
+            sender: 'ゆーや',
+            date: dateStr,
+            week: weekStr
+        });
+        console.log(`Logged scout send to 【PdM】スカウト sheet: ${url}`);
+    } catch (e) {
+        console.error('Failed to log scout send to 【PdM】スカウト sheet:', e);
+    }
 }
 
 run().catch(console.error);
