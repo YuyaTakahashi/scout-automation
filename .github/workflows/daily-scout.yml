@@ -8,11 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Scout Mode (pickup or unrated)'
+        description: 'Scout Mode (pickup, unrated, or all)'
         required: true
-        default: 'pickup'
+        default: 'all'
         type: choice
         options:
+          - all
           - pickup
           - unrated
       dry_run:
@@ -51,7 +52,7 @@ jobs:
         GAS_WEB_APP_URL: ${{ secrets.GAS_WEB_APP_URL }}
         # GitHub Action inputs are strings, but we need to handle them carefully
         # For scheduled runs, we default to pickup and dry-run
-        MODE: ${{ github.event.inputs.mode || 'pickup' }}
+        MODE: ${{ github.event.inputs.mode || 'all' }}
         DRY_RUN: ${{ github.event.inputs.dry_run == 'false' && 'false' || 'true' }}
       run: |
         CMD="npm run scout -- --mode=$MODE"

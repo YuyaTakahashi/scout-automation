@@ -107,6 +107,10 @@ async function run() {
             await runPickupMode(page, isDryRun);
         } else if (mode === 'unrated') {
             await runUnratedMode(page, isDryRun);
+        } else if (mode === 'all') {
+            console.log('Running ALL modes (Pickup + Unrated)...');
+            await runPickupMode(page, isDryRun);
+            await runUnratedMode(page, isDryRun);
         } else {
             console.error(`Unknown mode: ${mode}`);
         }
