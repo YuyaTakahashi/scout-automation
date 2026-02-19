@@ -10,7 +10,8 @@
         "auth:sync": "npm run auth && gh secret set AUTH_JSON < auth.json",
         "scout:dry-run": "ts-node src/scout.ts --dry-run",
         "scout": "ts-node src/scout.ts",
-        "collect-data": "ts-node src/collect_data.ts"
+        "collect-data": "ts-node src/collect_data.ts",
+        "gas:push": "clasp push"
     },
     "keywords": [],
     "author": "",

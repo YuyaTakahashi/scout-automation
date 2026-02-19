@@ -1,0 +1,15 @@
+**/*.ts
+**/*.js
+**/*.html
+**/*.csv
+**/*.json
+**/*.md
+.env
+.gitignore
+.git/
+node_modules/
+package-lock.json
+package.json
+tsconfig.json
+!Code.gs
+!appsscript.json
