@@ -5,7 +5,7 @@ function doPost(e) {
     
     if (!sheet) {
       sheet = ss.insertSheet('ビズリーチ送付履歴');
-      sheet.appendRow(['URL', '判定', 'スカウト判定', 'クラス', 'ステータス', '求人タイトル', '本文', '判定日時']);
+      sheet.appendRow(['URL', '判定', 'スカウト判定', 'クラス', 'ステータス', '求人タイトル', '本文', '判定日時', 'プロフィール']);
     }
 
     const data = JSON.parse(e.postData.contents);
@@ -18,7 +18,8 @@ function doPost(e) {
       data.status || '',
       data.title || '',
       data.body || '',
-      new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+      new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+      data.profile || ''
     ]);
     
     return ContentService.createTextOutput(JSON.stringify({ status: 'success' }))

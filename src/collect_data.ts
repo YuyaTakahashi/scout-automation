@@ -192,6 +192,7 @@ async function run() {
                         status: status,
                         title: '', // Empty as requested
                         body: '', // Empty as requested
+                        profile: resumeContent,
                         timestamp: timestamp
                     });
                     console.log('Successfully logged to Google Sheet via GAS.');

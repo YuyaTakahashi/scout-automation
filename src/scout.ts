@@ -513,7 +513,7 @@ async function processCandidate(page: Page, row: Locator, mode: 'pickup' | 'unra
     }
 
     // Logging
-    await logResult(candidateUrl, evaluation, classLabel, status, jobTitle, jobBody);
+    await logResult(candidateUrl, evaluation, classLabel, status, jobTitle, jobBody, resumeContent);
 
     // Close Detail
     await closeDetail(page);
@@ -537,7 +537,8 @@ async function logResult(
     classLabel: string,
     status: string,
     title: string,
-    body: string
+    body: string,
+    profile: string
 ) {
     const timestamp = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
     const gasUrl = process.env.GAS_WEB_APP_URL;
@@ -554,6 +555,7 @@ async function logResult(
                 status: status,
                 title: title,
                 body: body,
+                profile: profile,
                 timestamp: timestamp
             });
         } catch (gasError) {
