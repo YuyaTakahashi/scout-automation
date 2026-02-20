@@ -1072,22 +1072,47 @@ function doPost(e) {
     let historySheet = ss.getSheetByName('ビズリーチ送付履歴');
     if (!historySheet) {
       historySheet = ss.insertSheet('ビズリーチ送付履歴');
-      historySheet.appendRow(['URL', '判定', 'スカウト判定', 'クラス', 'ステータス', '求人タイトル', '本文', '判定日時', 'プロフィール', '得意領域', 'やりたいこと']);
     }
 
-    historySheet.appendRow([
-      data.url,
-      String(data.evaluation || ''),
-      data.decision || '',
-      data.class || '',
-      data.status || '',
-      data.title || '',
-      data.body || '',
-      new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-      data.profile || '',
-      data.strengths || '',
-      data.aspirations || ''
-    ]);
+    // ヘッダーの定義と取得/作成
+    const expectedHeaders = ['URL', '判定', 'スカウト判定', 'クラス', 'ステータス', '求人タイトル', '本文', '判定日時', 'プロフィール', '得意領域', 'やりたいこと'];
+    let currentHeaders = historySheet.getRange(1, 1, 1, historySheet.getLastColumn() || expectedHeaders.length).getValues()[0];
+    
+    // ヘッダーが空、またはURLが含まれていない場合は初期化
+    if (currentHeaders.length === 0 || !currentHeaders.includes('URL')) {
+      historySheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+      currentHeaders = expectedHeaders;
+    }
+
+    // 列インデックスのマップ作成（1-indexed）
+    const colMap = {};
+    expectedHeaders.forEach(h => {
+      let idx = currentHeaders.indexOf(h);
+      if (idx === -1) {
+        // ヘッダーが足りない場合は末尾に追加
+        idx = currentHeaders.length;
+        historySheet.getRange(1, idx + 1).setValue(h);
+        currentHeaders.push(h);
+      }
+      colMap[h] = idx + 1;
+    });
+
+    // データの書き込み
+    const rowData = [];
+    const lastRow = historySheet.getLastRow() + 1;
+    
+    // 各列に対応するデータを配置
+    historySheet.getRange(lastRow, colMap['URL']).setValue(data.url);
+    historySheet.getRange(lastRow, colMap['判定']).setValue(String(data.evaluation || ''));
+    historySheet.getRange(lastRow, colMap['スカウト判定']).setValue(data.decision || '');
+    historySheet.getRange(lastRow, colMap['クラス']).setValue(data.class || '');
+    historySheet.getRange(lastRow, colMap['ステータス']).setValue(data.status || '');
+    historySheet.getRange(lastRow, colMap['求人タイトル']).setValue(data.title || '');
+    historySheet.getRange(lastRow, colMap['本文']).setValue(data.body || '');
+    historySheet.getRange(lastRow, colMap['判定日時']).setValue(new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
+    historySheet.getRange(lastRow, colMap['プロフィール']).setValue(data.profile || '');
+    historySheet.getRange(lastRow, colMap['得意領域']).setValue(data.strengths || '');
+    historySheet.getRange(lastRow, colMap['やりたいこと']).setValue(data.aspirations || '');
     
     return ContentService.createTextOutput(JSON.stringify({ status: 'success' }))
       .setMimeType(ContentService.MimeType.JSON);

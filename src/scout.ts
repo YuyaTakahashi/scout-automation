@@ -181,20 +181,28 @@ async function runPickupMode(page: Page, isDryRun: boolean) {
 
     const maxCandidates = candidateRows.length;
     for (let i = 0; i < maxCandidates; i++) {
-        const currentRows = await page.locator('#jsi_resume_block > li.md-carditem').all();
-        if (i >= currentRows.length) break;
-        const row = currentRows[i];
-        console.log(`Processing Pickup candidate ${i + 1}/${Math.min(maxCandidates, currentRows.length)}...`);
+        try {
+            const currentRows = await page.locator('#jsi_resume_block > li.md-carditem').all();
+            if (i >= currentRows.length) break;
+            const row = currentRows[i];
+            console.log(`Processing Pickup candidate ${i + 1}/${Math.min(maxCandidates, currentRows.length)}...`);
 
-        await processCandidate(page, row, 'pickup', isDryRun);
+            await processCandidate(page, row, 'pickup', isDryRun);
+        } catch (candidateError) {
+            console.error(`Error processing Pickup candidate ${i + 1}:`, candidateError);
+            // エラーが発生しても次の候補者へ進む
+            await closeDetail(page).catch(() => { });
+        }
     }
+    console.log('--- Pickup Mode Completed ---');
 }
 
 async function runUnratedMode(page: Page, isDryRun: boolean) {
+    console.log('--- Executing Unrated Mode ---');
     const UNRATED_URL = 'https://cr-support.jp/scout/highclass/tl/search/unrated?targetJobId=1980129&rlil=5167815&tlMode=true&classRg=&classJr=&classTt=&listType=&searchServiceName=highclass&grdN=true&os=false&ous=true&osc=false&ousc=false&oss=OUS&da=false&dr=false&kw=&kwaf=true&rsc=IVD';
 
     console.log(`Navigating to Unrated Search: ${UNRATED_URL}`);
-    await page.goto(UNRATED_URL, { waitUntil: 'networkidle' });
+    await page.goto(UNRATED_URL, { waitUntil: 'networkidle', timeout: 60000 });
     await page.waitForLoadState('domcontentloaded');
     console.log(`Current URL: ${page.url()}`);
     console.log(`Page Title: ${await page.title()}`);
@@ -206,56 +214,64 @@ async function runUnratedMode(page: Page, isDryRun: boolean) {
     // Wait for list
     console.log('Waiting for candidate list (#jsi_resume_block)...');
     try {
-        await page.waitForSelector('#jsi_resume_block', { state: 'visible', timeout: 15000 });
+        await page.waitForSelector('#jsi_resume_block', { state: 'visible', timeout: 30000 });
     } catch (e) {
         console.warn('Common selector #jsi_resume_block not found in Unrated mode.');
         await page.screenshot({ path: 'debug_unrated_no_list.png' });
         fs.writeFileSync('debug_unrated_list.html', await page.content());
+        // リストが見つからない場合は終了
+        return;
     }
 
-    // Unrated list likely has similar structure but maybe different classes. 
-    // We assume 'li' inside the block.
-    // If specific class '.md-carditem' is missing, fallback to just 'li' might pick up garbage, but let's try specific first.
     let candidateRows = await page.locator('#jsi_resume_block > li.md-carditem').all();
     if (candidateRows.length === 0) {
         candidateRows = await page.locator('#jsi_resume_block > li').all();
     }
     console.log(`Found ${candidateRows.length} Unrated candidates.`);
 
-    if (candidateRows.length === 0) return;
+    if (candidateRows.length === 0) {
+        console.log('No unrated candidates found.');
+        return;
+    }
 
     const maxCandidates = candidateRows.length;
     for (let i = 0; i < maxCandidates; i++) {
-        // Re-fetch to be safe
-        let currentRows = await page.locator('#jsi_resume_block > li.md-carditem').all();
-        if (currentRows.length === 0) {
-            currentRows = await page.locator('#jsi_resume_block > li').all();
-        }
-
-        if (i >= currentRows.length) break;
-        const row = currentRows[i];
-
-        console.log(`Processing Unrated candidate ${i + 1}/${maxCandidates}...`);
-        const result = await processCandidate(page, row, 'unrated', isDryRun);
-
-        // Handle "Rank C" click for Skipped Unrated Candidates
-        if (result.decision === 'SKIP' && !result.error) {
-            console.log('SKIP action for unrated: Clicking Rank C button...');
-            const rankCBtn = row.locator('label').filter({ hasText: 'C評価' }).first();
-
-            if (await rankCBtn.isVisible()) {
-                if (!isDryRun) {
-                    await rankCBtn.click();
-                    console.log('Clicked Rank C button.');
-                    await page.waitForTimeout(1000);
-                } else {
-                    console.log('Dry Run: Skipping Rank C click.');
-                }
-            } else {
-                console.warn('Rank C button not found for this candidate row.');
+        try {
+            // Re-fetch to be safe
+            let currentRows = await page.locator('#jsi_resume_block > li.md-carditem').all();
+            if (currentRows.length === 0) {
+                currentRows = await page.locator('#jsi_resume_block > li').all();
             }
+
+            if (i >= currentRows.length) break;
+            const row = currentRows[i];
+
+            console.log(`Processing Unrated candidate ${i + 1}/${maxCandidates}...`);
+            const result = await processCandidate(page, row, 'unrated', isDryRun);
+
+            // Handle "Rank C" click for Skipped Unrated Candidates
+            if (result.decision === 'SKIP' && !result.error) {
+                console.log('SKIP action for unrated: Clicking Rank C button...');
+                const rankCBtn = row.locator('label').filter({ hasText: 'C評価' }).first();
+
+                if (await rankCBtn.isVisible()) {
+                    if (!isDryRun) {
+                        await rankCBtn.click();
+                        console.log('Clicked Rank C button.');
+                        await page.waitForTimeout(1000);
+                    } else {
+                        console.log('Dry Run: Skipping Rank C click.');
+                    }
+                } else {
+                    console.warn('Rank C button not found for this candidate row.');
+                }
+            }
+        } catch (candidateError) {
+            console.error(`Error processing Unrated candidate ${i + 1}:`, candidateError);
+            await closeDetail(page).catch(() => { });
         }
     }
+    console.log('--- Unrated Mode Completed ---');
 }
 
 async function checkLoginRedirect(page: Page) {
