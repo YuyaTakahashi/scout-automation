@@ -192,10 +192,10 @@ async function run() {
                         status: status,
                         title: '', // Empty as requested
                         body: '', // Empty as requested
-                        strengths: evaluation.strengths,
-                        aspirations: evaluation.aspirations,
+                        timestamp: timestamp,
                         profile: resumeContent,
-                        timestamp: timestamp
+                        strengths: evaluation.strengths,
+                        aspirations: evaluation.aspirations
                     });
                     console.log('Successfully logged to Google Sheet via GAS.');
                 } catch (gasError) {
