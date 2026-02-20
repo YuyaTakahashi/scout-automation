@@ -119,11 +119,21 @@ async function run() {
             }
 
             console.log('--- Phase 2: Unrated Mode ---');
+            await page.waitForTimeout(5000); // 間にしっかり待機を入れる
+
+            // 状態が混ざるのを防ぐため、新しいページを作成して実行
+            const unratedPage = await context.newPage();
             try {
-                await runUnratedMode(page, isDryRun);
+                await runUnratedMode(unratedPage, isDryRun);
                 console.log('--- Phase 2: Unrated Mode Finished ---');
             } catch (unratedError) {
                 console.error('An error occurred during Unrated Mode:', unratedError);
+                try {
+                    await unratedPage.screenshot({ path: 'unrated_error_screenshot.png' });
+                    fs.writeFileSync('unrated_error_dump.html', await unratedPage.content());
+                } catch (e) { }
+            } finally {
+                await unratedPage.close();
             }
         } else {
             console.error(`Unknown mode: ${mode}`);
@@ -131,20 +141,21 @@ async function run() {
     } catch (error) {
         console.error('An error occurred during execution:', error);
         try {
+            await page.screenshot({ path: 'error_screenshot.png' });
             fs.writeFileSync('error_dump.html', await page.content());
-            console.log('Saved error_dump.html');
-        } catch (filesysError) {
-            console.error('Failed to save error dump:', filesysError);
-        }
+        } catch (e) { }
     } finally {
+        await page.waitForTimeout(2000);
+        await context.close();
         await browser.close();
     }
 }
 
 async function runPickupMode(page: Page, isDryRun: boolean) {
+    console.log('--- Executing Pickup Mode ---');
     // 1. Dashboard
     console.log(`Navigating to Dashboard: ${BASE_URL}/mypage/`);
-    await page.goto(`${BASE_URL}/mypage/`);
+    await page.goto(`${BASE_URL}/mypage/`, { waitUntil: 'networkidle' });
     console.log('Dashboard loaded. Waiting for DOM...');
     await page.waitForLoadState('domcontentloaded');
 
@@ -183,24 +194,23 @@ async function runUnratedMode(page: Page, isDryRun: boolean) {
     const UNRATED_URL = 'https://cr-support.jp/scout/highclass/tl/search/unrated?targetJobId=1980129&rlil=5167815&tlMode=true&classRg=&classJr=&classTt=&listType=&searchServiceName=highclass&grdN=true&os=false&ous=true&osc=false&ousc=false&oss=OUS&da=false&dr=false&kw=&kwaf=true&rsc=IVD';
 
     console.log(`Navigating to Unrated Search: ${UNRATED_URL}`);
-    await page.goto(UNRATED_URL);
+    await page.goto(UNRATED_URL, { waitUntil: 'networkidle' });
     await page.waitForLoadState('domcontentloaded');
     console.log(`Current URL: ${page.url()}`);
     console.log(`Page Title: ${await page.title()}`);
+    await page.screenshot({ path: 'unrated_search_start.png' });
 
     await checkLoginRedirect(page);
     await handleGroupSelection(page);
 
     // Wait for list
-    console.log('Waiting for candidate list...');
-    // Trying common selector for search results. 
-    // In many lists it is #jsi_resume_block, but let's try broadly if fails.
+    console.log('Waiting for candidate list (#jsi_resume_block)...');
     try {
-        await page.waitForSelector('#jsi_resume_block', { state: 'visible', timeout: 10000 });
+        await page.waitForSelector('#jsi_resume_block', { state: 'visible', timeout: 15000 });
     } catch (e) {
-        console.warn('Common selector #jsi_resume_block not found. Dumping page for debug.');
+        console.warn('Common selector #jsi_resume_block not found in Unrated mode.');
+        await page.screenshot({ path: 'debug_unrated_no_list.png' });
         fs.writeFileSync('debug_unrated_list.html', await page.content());
-        console.log('Saved debug_unrated_list.html');
     }
 
     // Unrated list likely has similar structure but maybe different classes. 
