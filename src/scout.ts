@@ -108,9 +108,23 @@ async function run() {
         } else if (mode === 'unrated') {
             await runUnratedMode(page, isDryRun);
         } else if (mode === 'all') {
-            console.log('Running ALL modes (Pickup + Unrated)...');
-            await runPickupMode(page, isDryRun);
-            await runUnratedMode(page, isDryRun);
+            console.log('Starting ALL modes (Pickup + Unrated)...');
+
+            console.log('--- Phase 1: Pickup Mode ---');
+            try {
+                await runPickupMode(page, isDryRun);
+                console.log('--- Phase 1: Pickup Mode Finished ---');
+            } catch (pickupError) {
+                console.error('An error occurred during Pickup Mode:', pickupError);
+            }
+
+            console.log('--- Phase 2: Unrated Mode ---');
+            try {
+                await runUnratedMode(page, isDryRun);
+                console.log('--- Phase 2: Unrated Mode Finished ---');
+            } catch (unratedError) {
+                console.error('An error occurred during Unrated Mode:', unratedError);
+            }
         } else {
             console.error(`Unknown mode: ${mode}`);
         }
@@ -171,6 +185,8 @@ async function runUnratedMode(page: Page, isDryRun: boolean) {
     console.log(`Navigating to Unrated Search: ${UNRATED_URL}`);
     await page.goto(UNRATED_URL);
     await page.waitForLoadState('domcontentloaded');
+    console.log(`Current URL: ${page.url()}`);
+    console.log(`Page Title: ${await page.title()}`);
 
     await checkLoginRedirect(page);
     await handleGroupSelection(page);
