@@ -1083,7 +1083,7 @@ function doPost(e) {
       data.status || '',
       data.title || '',
       data.body || '',
-      data.timestamp || new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+      new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
       data.profile || '',
       data.strengths || '',
       data.aspirations || ''
