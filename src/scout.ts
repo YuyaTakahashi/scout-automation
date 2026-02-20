@@ -580,6 +580,8 @@ async function logResult(
                 status: status,
                 title: title,
                 body: body,
+                strengths: evaluation.strengths,
+                aspirations: evaluation.aspirations,
                 profile: profile,
                 timestamp: timestamp
             });

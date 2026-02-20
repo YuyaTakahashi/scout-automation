@@ -51,9 +51,17 @@ const evaluationSchema = {
             type: SchemaType.STRING,
             description: "Scout message body (required if evaluation is B or higher)",
             nullable: true
+        },
+        strengths: {
+            type: SchemaType.STRING,
+            description: "The absolute strengths/core-area of the candidate (always required regardless of evaluation)",
+        },
+        aspirations: {
+            type: SchemaType.STRING,
+            description: "What the candidate wants to do or their career direction (always required regardless of evaluation)",
         }
     },
-    required: ["level", "evaluation", "reason", "interestLevel", "interestReason"]
+    required: ["level", "evaluation", "reason", "interestLevel", "interestReason", "strengths", "aspirations"]
 } as any; // Cast to any to avoid strict SchemaType mismatch issues in some SDK versions
 
 const SYSTEM_PROMPT_PREFIX = `
@@ -92,17 +100,21 @@ const EVALUATION_LOGIC = `
    - **エンジニアキャリア層の制限**: 
      - 経歴の大部分がエンジニアであり、職務要約や自己PRにおいて「要件定義」「仕様策定」「事業貢献」「顧客課題の解決」への関心が薄く、技術追求（実装）のみに特化している場合は、レベルに関わらず **必ずC以下** にする。
    - **未経験ミドルの扱い**: 40代でPdM実務未経験、または受託のPM経験のみの場合は、原則「C」または「D」とする。診断士資格・事業開発実績があっても、B2B SaaS領域での実績がなければB以上はつけない。
- 4. **スカウト文作成**: 評価B以上の場合のみ作成。
+ 4. **情報の抽出と定義**: 評価に関わらず、候補者の経歴から以下の2点を必ず言語化してください。
+    - **strengths (得意領域)**: 候補者が最も実績を上げている、あるいは深い知識を持つ領域。
+    - **aspirations (やりたいこと)**: 候補者が今後挑戦したいこと、あるいはキャリアの方向性。
+ 5. **スカウト文作成**: 評価B以上の場合のみ作成。
     - **scoutTitle / titleKeyword**: 
       - **【最優先・絶対遵守】禁止ワード(いかなる文脈でも出力禁止)**: 「WEBシステム」「Webシステム」「WEBサービス」「Webサービス」「人材」「求人」「SaaS」「グロース」「牽引」「推進」「改善」「投資」「会計」「広告」「海外事業」「海外」「グローバル」「Overseas」「Global」は、scoutTitleおよびtitleKeywordに **絶対に使用しないでください**。
        - **キーワード作成手順**:
-         1. **特重視キーワード**: 以下のカテゴリの具体的な単語を活用・優先してください。
+         1. 分析: 定義した **strengths** および **aspirations** を基に、「この候補者がオープンロジで何を実現できるか」を言語化する。
+         2. **特重視キーワード**: 抽出した要素が以下のカテゴリに合致する場合は優先的に使用してください。
             - 【手法・スタンス】: 「スクラム開発」「アジャイル」「N=1インタビュー」「仮説検証」「SQL/データ分析」「ユーザーディスカバリー」「ユーザーリサーチ」
             - 【ドメイン・難易度】: 「B2Bの深掘り」「複雑な業務フロー」「基盤設計」「マルチステークホルダー」「サプライチェーン」
             - 【フェーズ・役割】: 「0→1」「新規立ち上げ」「基盤刷新」「オーナーシップ」「10→100」
             - 【資質・らしさ】: 「コトに向かう」「解像度の高い言語化」「Outcome重視」
-         2. **「具体的手段(How) + 成果(Outcome)」の組み合わせ**: 抽象的な言葉単体（「事業を創る」等）は禁止し、必ず「How」を掛け合わせてください。
-         3. **分析**: 候補者の具体的な実績（A）から、オープンロジでの役割（B）へ繋げる一言を作成する。
+         3. **「具体的手段(How) + 成果(Outcome)」の組み合わせ**: 抽象的な言葉単体（「事業を創る」等）は禁止し、必ず「How」を掛け合わせてください。
+         4. **分析**: 候補者の具体的な実績（A）から、オープンロジでの役割（B）へ繋げる一言を作成する。
             - ✅ 良い例: 【UXでPMFを追求】【データ分析で事業を創る】【スクラムで0→1を創る】【B2Bの課題を定義】【N=1で価値を創る】
             - ❌ 悪い例(抽象的/NG): 【事業を創る】【PMFを追求】【Webシステム開発】【WEBサービス改善】【SaaSプロダクト改善】【物流を革新】
          4. **フォールバック規則**: 候補者のプロフィールがいずれのキーワードや「具体的手法」にも明確に合致しない、あるいは訴求が難しい場合は、**デフォルトとして「【社会課題×累計65億調達】」を出力**してください。
@@ -125,6 +137,8 @@ export type ScoutEvaluation = {
     scoutTitle?: string;
     titleKeyword?: string;
     scoutMessage?: string;
+    strengths: string;
+    aspirations: string;
 };
 
 export async function evaluateCandidate(candidateProfile: string): Promise<ScoutEvaluation> {

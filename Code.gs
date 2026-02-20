@@ -1072,13 +1072,15 @@ function doPost(e) {
     let historySheet = ss.getSheetByName('ビズリーチ送付履歴');
     if (!historySheet) {
       historySheet = ss.insertSheet('ビズリーチ送付履歴');
-      historySheet.appendRow(['URL', '判定', 'スカウト判定', 'クラス', 'ステータス', '求人タイトル', '本文', '判定日時', 'プロフィール']);
+      historySheet.appendRow(['URL', '判定', 'スカウト判定', '得意領域', 'やりたいこと', 'クラス', 'ステータス', '求人タイトル', '本文', '判定日時', 'プロフィール']);
     }
 
     historySheet.appendRow([
       data.url,
       String(data.evaluation || ''),
       data.decision || '',
+      data.strengths || '',
+      data.aspirations || '',
       data.class || '',
       data.status || '',
       data.title || '',

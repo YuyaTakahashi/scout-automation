@@ -192,6 +192,8 @@ async function run() {
                         status: status,
                         title: '', // Empty as requested
                         body: '', // Empty as requested
+                        strengths: evaluation.strengths,
+                        aspirations: evaluation.aspirations,
                         profile: resumeContent,
                         timestamp: timestamp
                     });
