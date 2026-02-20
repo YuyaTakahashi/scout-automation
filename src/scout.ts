@@ -590,10 +590,10 @@ async function logResult(
                 status: status,
                 title: title,
                 body: body,
-                timestamp: timestamp,
-                profile: profile,
                 strengths: evaluation.strengths,
-                aspirations: evaluation.aspirations
+                aspirations: evaluation.aspirations,
+                profile: profile,
+                timestamp: timestamp
             });
         } catch (gasError) {
             console.error('Failed to log to GAS:', gasError);
